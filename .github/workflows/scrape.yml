@@ -1,0 +1,22 @@
+name: Scrape and commit
+
+on:
+  workflow_dispatch:
+  schedule:
+  # once a day at 08:15 at JST
+  - cron:  '15 23 * * *'
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run scrape.sh
+      run: bash scrape.sh
+    - name: Commit and push
+      run: |-
+        git add -A
+        timestamp=$(date -u)
+        git commit -m "${timestamp}" || exit 0
+        git pull --rebase
+        git push
