@@ -7,7 +7,7 @@ export TZ="Asia/Tokyo"
 
 # today and tomorrow
 START_DATE=$(date +%Y%m%d)
-END_DATE=$(date -v +1d +%Y%m%d)
+END_DATE=$(date -v +1d +%Y%m%d || date -d 'tomorrow' +%Y%m%d) # for macOS || ubuntu
 
 echo "START_DATE: ${START_DATE}"
 echo "END_DATE: ${END_DATE}"
