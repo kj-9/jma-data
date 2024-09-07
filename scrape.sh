@@ -23,7 +23,7 @@ do
   
   echo "fetch URL: ${URL}"
   
-  DIR="data/${START_DATE}${START_TIME}-${END_DATE}${END_TIME}"
+  DIR="data/${START_DATE}${START_TIME}_${END_DATE}${END_TIME}"
   mkdir -p $DIR
 
   curl -s $URL |
