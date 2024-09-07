@@ -14,16 +14,25 @@ echo "END_DATE: ${END_DATE}"
 
 # seems fixed
 START_TIME="080000"
-END_TIME="000000"
 
-for TARGET in min_temp_point max_temp_point
-do
+# seems separate
+END_TIME_MIN_TEMP="000000"
+END_TIME_MAX_TEMP="090000"
+
+
+# requires bash version >= 4.0
+declare -A target_map
+
+target_map["min_temp_point"]=$END_TIME_MIN_TEMP
+target_map["max_temp_point"]=$END_TIME_MAX_TEMP
+
+for TARGET in "${!target_map[@]}"; do
   echo "TARGET: ${TARGET}"
-  URL="https://www.jma.go.jp/bosai/jmatile/data/wdist/${START_DATE}${START_TIME}/none/${END_DATE}${END_TIME}/surf/${TARGET}/data.geojson?id=${TARGET}"
+  URL="https://www.jma.go.jp/bosai/jmatile/data/wdist/${START_DATE}${START_TIME}/none/${END_DATE}${target_map[$TARGET]}/surf/${TARGET}/data.geojson?id=${TARGET}"
   
   echo "fetch URL: ${URL}"
   
-  DIR="data/${START_DATE}${START_TIME}_${END_DATE}${END_TIME}"
+  DIR="data/${END_DATE}"
   mkdir -p $DIR
 
   curl -s $URL |
