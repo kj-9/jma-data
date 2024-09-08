@@ -2,41 +2,34 @@
 
 set -eu -o pipefail
 
-# Set timezone to JST
-export TZ="Asia/Tokyo"
 
-# today and tomorrow
-START_DATE=$(date +%Y%m%d)
-END_DATE=$(date -v +1d +%Y%m%d || date -d 'tomorrow' +%Y%m%d) # for macOS || ubuntu
+# Download the targetTimes.json file
+curl -s https://www.jma.go.jp/bosai/jmatile/data/wdist/targetTimes.json > /tmp/targetTimes.json
 
-echo "START_DATE: ${START_DATE}"
-echo "END_DATE: ${END_DATE}"
+# get a table of basetime, validtime, and element to be scraped
+extract_table() {
+  local element=$1
+  jq -r --arg element "$element" '.[] | select(.elements | index($element)) | "\(.basetime) \(.validtime) \($element)"' /tmp/targetTimes.json
+}
 
-# seems fixed
-START_TIME="080000"
+min_table=$(extract_table "min_temp_point")
+max_table=$(extract_table "max_temp_point")
 
-# seems separate
-END_TIME_MIN_TEMP="000000"
-END_TIME_MAX_TEMP="090000"
+table="$min_table"$'\n'"$max_table"
 
-
-# requires bash version >= 4.0
-declare -A target_map
-
-target_map["min_temp_point"]=$END_TIME_MIN_TEMP
-target_map["max_temp_point"]=$END_TIME_MAX_TEMP
-
-for TARGET in "${!target_map[@]}"; do
-  echo "TARGET: ${TARGET}"
-  URL="https://www.jma.go.jp/bosai/jmatile/data/wdist/${START_DATE}${START_TIME}/none/${END_DATE}${target_map[$TARGET]}/surf/${TARGET}/data.geojson?id=${TARGET}"
+# Loop through the table
+echo "$table" | while read -r basetime validtime element; do
   
-  echo "fetch URL: ${URL}"
+  # Use the extracted basetime, validtime, and element
+  echo "Basetime: $basetime, Validtime: $validtime, Element: $element"
   
-  DIR="data/${END_DATE}"
-  mkdir -p $DIR
+  # Example usage in a URL
+  url="https://www.jma.go.jp/bosai/jmatile/data/wdist/${basetime}/none/${validtime}/surf/${element}/data.geojson?id=${element}"
+  echo "fetch URL: ${url}"
 
-  curl -s $URL |
-    jq . > "${DIR}/${TARGET}.geojson"
+  data_dir="data/${basetime}"
+  mkdir -p $data_dir
+  
+  curl -s $url | gzip > "${data_dir}/${element}-${validtime}.geojson.gz"
 
-  echo "saved to ${DIR}/${TARGET}.geojson"
 done
