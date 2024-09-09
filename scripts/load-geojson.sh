@@ -4,16 +4,17 @@ set -eu -o pipefail
 FILE_DB="data/jma.db"
 
 # args
-FILE_GEOJSON=$1 # "data/20240909080000/min_temp_point-20240910000000.geojson"
+FILE_GEOJSON=$1 # "data/tmp/20240909080000-20240910000000-min_temp_point.geojson"
 
 # drived
-# from FILE_GEOJSON
-TABLE_APPEND=$(basename $FILE_GEOJSON | sed -e 's/\.geojson$//g' | sed -e 's/-.*$//g' | sed -e 's/_point$//g')
+# min_temp
+TABLE_APPEND=$(basename $FILE_GEOJSON | cut -d'-' -f3 | cut -d'.' -f1 | sed 's/_point//')
 TABLE_INGEST="${TABLE_APPEND}_ingest"
 
-
-BASETIME=$(basename $(dirname $FILE_GEOJSON))
-VALIDTIME=$(basename $FILE_GEOJSON | sed -e 's/.*-//g' | sed -e 's/\.geojson$//g')
+# 20240909080000
+BASETIME=$(basename $FILE_GEOJSON | cut -d'-' -f1)
+# 20240910000000
+VALIDTIME=$(basename $FILE_GEOJSON | cut -d'-' -f2)
 
 echo "TABLE_INGEST: $TABLE_INGEST"
 echo "BASETIME: $BASETIME"
@@ -107,7 +108,7 @@ select geometry from $TABLE_INGEST;
 EOF
 )
 sqlite-utils $FILE_DB "$q"
-sqlite-utils $FILE_DB "select * from points limit 10"
+#sqlite-utils $FILE_DB "select * from points limit 10"
 
 
 q=$(cat <<EOF
@@ -121,11 +122,14 @@ ON CONFLICT(time_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEN
 EOF
 )
 sqlite-utils $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME
+#sqlite-utils $FILE_DB "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
-sqlite-utils $FILE_DB "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
+
+# cleanup
 sqlite-utils --load-extension=spatialite $FILE_DB "select DropTable('main', '$TABLE_INGEST')"
-
+rm -f $FILE_GEOJSON
 sqlite-utils vacuum $FILE_DB
 
+# show file size
 ls -lah $FILE_DB
