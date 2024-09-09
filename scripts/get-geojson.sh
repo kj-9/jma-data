@@ -27,9 +27,9 @@ echo "$table" | while read -r basetime validtime element; do
   url="https://www.jma.go.jp/bosai/jmatile/data/wdist/${basetime}/none/${validtime}/surf/${element}/data.geojson?id=${element}"
   echo "fetch URL: ${url}"
 
-  data_dir="data/${basetime}"
+  data_dir="data/tmp"
   mkdir -p $data_dir
   
-  curl -s $url | gzip > "${data_dir}/${element}-${validtime}.geojson.gz"
+  curl -s $url > "${data_dir}/${basetime}-${validtime}-${element}.geojson"
 
 done
