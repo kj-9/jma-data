@@ -12,11 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: setup
-      run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install spatialite-tools
-        pip install sqlite-utils
-
+      run: apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
     - name: get geojson
       run: bash scripts/get-geojson.sh
     - name: upsert
