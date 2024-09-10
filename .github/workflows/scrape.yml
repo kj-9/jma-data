@@ -15,8 +15,8 @@ jobs:
       run: apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
     - name: get geojson
       run: bash scripts/get-geojson.sh
-    - name: upsert
-      run: bash scripts/upsert.sh
+    - name: upsert for each geojson file
+      run: find data/tmp -type f -name "*.geojson" | xargs -I {} bash scripts/load-geojson.sh {}
     - name: Commit and push
       run: |-
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
