@@ -4,6 +4,7 @@ set -eu -o pipefail
 
 # constants
 FILE_DB="data/jma.db"
+ROWS_AFFECTED="data/tmp/rows_affected.txt"
 
 # args
 FILE_GEOJSON=$1 # "data/tmp/20240909080000-20240910000000-min_temp_point.geojson"
@@ -26,10 +27,14 @@ echo "VALIDTIME: $VALIDTIME"
 export SPATIALITE_SECURITY=relaxed
 
 echo "upsert to \`times\`..."
-sqlite-utils $FILE_DB '
+q=$(cat <<EOF
 insert or ignore into times (base_time, valid_time)
-values (:base_time, :valid_time)' \
-    -p base_time $BASETIME -p valid_time $VALIDTIME
+values (:base_time, :valid_time);
+EOF
+)
+sqlite-utils $FILE_DB "$q" \
+    -p base_time $BASETIME -p valid_time $VALIDTIME \
+    >> $ROWS_AFFECTED 
 
 
 echo "load geojson to \`$TABLE_INGEST\`..."
@@ -46,7 +51,7 @@ insert or ignore into points(geometry)
 select geometry from $TABLE_INGEST;
 EOF
 )
-sqlite-utils $FILE_DB "$q"
+sqlite-utils $FILE_DB "$q" >> $ROWS_AFFECTED
 #sqlite-utils $FILE_DB "select * from points limit 10"
 
 
@@ -61,7 +66,7 @@ where true
 ON CONFLICT(time_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEND;
 EOF
 )
-sqlite-utils $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME
+sqlite-utils $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME >> $ROWS_AFFECTED
 #sqlite-utils $FILE_DB "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
 
