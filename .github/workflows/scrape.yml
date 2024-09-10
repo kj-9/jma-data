@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: setup
-      run: apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
+      run: sudo apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
     - name: get geojson
       run: bash scripts/get-geojson.sh
     - name: upsert for each geojson file
