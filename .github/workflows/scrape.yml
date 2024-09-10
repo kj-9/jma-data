@@ -18,9 +18,9 @@ jobs:
         pip install sqlite-utils
 
     - name: get geojson
-      run: bash get-geojson.sh
+      run: bash scripts/get-geojson.sh
     - name: upsert
-      run: bash upsert.sh
+      run: bash scripts/upsert.sh
     - name: Commit and push
       run: |-
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
