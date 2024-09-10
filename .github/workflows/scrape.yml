@@ -11,13 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Run scrape.sh
-      run: bash scrape.sh
+    - name: setup
+      run: |- 
+        sudo apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
+        pip install sqlite-utils
+    - name: get geojson
+      run: bash scripts/get-geojson.sh
+    - name: upsert for each geojson file
+      run: find data/tmp -type f -name "*.geojson" | xargs -I {} bash scripts/upsert.sh {}
     - name: Commit and push
       run: |-
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions[bot]"
         git add -A
+
+        # check rows affected
+        rows=$(awk '{sum += $1} END {print sum}' data/tmp/rows_affected.txt)
+
+        # if no rows affected, exclude data/jma.db from commit
+        if [ $rows -eq 0 ]; then
+          echo "No rows affected. exclude data/jma.db from commit"
+          git reset data/jma.db
+        fi
+
         timestamp=$(date -u)
         git commit -m "${timestamp}" || exit 0
         git pull --rebase
