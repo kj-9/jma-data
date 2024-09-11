@@ -51,7 +51,8 @@ insert or ignore into points(geometry)
 select geometry from $TABLE_INGEST;
 EOF
 )
-sqlite-utils $FILE_DB "$q" \
+sqlite-utils --load-extension=spatialite \
+  $FILE_DB "$q" \
   | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
 #sqlite-utils $FILE_DB "select * from points limit 10"
 
@@ -67,7 +68,8 @@ where true
 ON CONFLICT(time_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEND;
 EOF
 )
-sqlite-utils $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME \
+sqlite-utils --load-extension=spatialite \
+  $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME \
   | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
 #sqlite-utils $FILE_DB "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
