@@ -24,10 +24,11 @@ create table if not exists times (
 echo "create if not exists \`points\` table..."
 sqlite-utils --load-extension=spatialite $FILE_DB '
 create table if not exists points (
-    point_id INTEGER PRIMARY KEY not null,
-    geometry POINTS not null,
-    unique (geometry)
+    point_id INTEGER PRIMARY KEY not null
 );'
+
+sqlite-utils --load-extension=spatialite $FILE_DB '
+select AddGeometryColumn('points', 'geometry', 4326, 'POINT', 2, 1);'
 
 
 echo "create if not exists \`min_temp\` table..."
