@@ -26,6 +26,10 @@ echo "VALIDTIME: $VALIDTIME"
 # for import geojson using spatialite
 export SPATIALITE_SECURITY=relaxed
 
+echo "guznzip ${FILE_DB}.gz ..."
+gunzip -f $FILE_DB.gz
+
+
 echo "upsert to \`times\`..."
 q=$(cat <<EOF
 insert or ignore into times (base_time, valid_time)
@@ -86,3 +90,10 @@ sqlite-utils vacuum $FILE_DB
 
 echo "file size:"
 ls -lah $FILE_DB
+
+
+echo "gzip ${FILE_DB}..."
+gzip -f $FILE_DB
+
+echo "file size:"
+ls -lah $FILE_DB.gz
