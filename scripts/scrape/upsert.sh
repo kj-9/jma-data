@@ -31,24 +31,20 @@ echo "VALIDTIME: $VALIDTIME"
 # for import geojson using spatialite
 export SPATIALITE_SECURITY=relaxed
 
-echo "guznzip ${FILE_DB}.gz ..."
-gunzip -f $FILE_DB.gz
 
-
-echo "upsert to \`times\`..."
+echo "upsert to \`dates\`..."
 q=$(cat <<EOF
-insert or ignore into times (base_time, valid_time)
-values (:base_time, :valid_time);
+insert or ignore into dates (valid_date)
+select substr(:valid_time, 1, 8);
 EOF
 )
 splite "$q" \
-    -p base_time $BASETIME -p valid_time $VALIDTIME \
+    -p valid_time $VALIDTIME \
     | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
 
 
 echo "load geojson to \`$TABLE_INGEST\`..."
-sqlite-utils --load-extension=spatialite \
-    $FILE_DB "select ImportGeoJSON('$FILE_GEOJSON', '$TABLE_INGEST')" \
+splite "select ImportGeoJSON('$FILE_GEOJSON', '$TABLE_INGEST')" \
 
 #splite "select * from $TABLE_INGEST limit 10"
 
@@ -65,18 +61,18 @@ splite "$q" \
 #splite "select * from points limit 10"
 
 
-echo "upsert to \`$TABLE_APPEND\`..."
+echo "upsert to \`temperature\`..."
 q=$(cat <<EOF
-insert into $TABLE_APPEND
-select times.time_id, points.point_id, value
+insert into temperature (date_id, point_id, $TABLE_APPEND)
+select dates.date_id, points.point_id, value
 from $TABLE_INGEST
   left join points using (geometry)
-  cross join (select time_id from times where base_time=:base_time and valid_time=:valid_time) as times
+  cross join (select date_id from dates where valid_date=substr(:valid_time, 1, 8)) as dates
 where true
-ON CONFLICT(time_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEND;
+ON CONFLICT(date_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEND;
 EOF
 )
-splite "$q" -p base_time $BASETIME -p valid_time $VALIDTIME \
+splite "$q" -p valid_time $VALIDTIME \
   | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
 #splite "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
@@ -87,16 +83,3 @@ splite "select DropTable('main', '$TABLE_INGEST')"
 
 echo "remove $FILE_GEOJSON..."
 rm -f $FILE_GEOJSON
-
-echo "vacuum db..."
-sqlite-utils vacuum $FILE_DB
-
-echo "file size:"
-ls -lah $FILE_DB
-
-
-echo "gzip ${FILE_DB}..."
-gzip -f $FILE_DB
-
-echo "file size:"
-ls -lah $FILE_DB.gz
