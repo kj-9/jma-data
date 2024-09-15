@@ -6,6 +6,11 @@ set -eu -o pipefail
 FILE_DB="data/jma.db"
 ROWS_AFFECTED="data/tmp/rows_affected.txt"
 
+# alias
+splite() {
+    sqlite-utils --load-extension=spatialite "$FILE_DB" "$@"
+}
+
 # args
 FILE_GEOJSON=$1 # "data/tmp/20240909080000-20240910000000-min_temp_point.geojson"
 
@@ -36,7 +41,7 @@ insert or ignore into times (base_time, valid_time)
 values (:base_time, :valid_time);
 EOF
 )
-sqlite-utils $FILE_DB "$q" \
+splite "$q" \
     -p base_time $BASETIME -p valid_time $VALIDTIME \
     | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
 
@@ -45,7 +50,7 @@ echo "load geojson to \`$TABLE_INGEST\`..."
 sqlite-utils --load-extension=spatialite \
     $FILE_DB "select ImportGeoJSON('$FILE_GEOJSON', '$TABLE_INGEST')" \
 
-#sqlite-utils $FILE_DB "select * from $TABLE_INGEST limit 10"
+#splite "select * from $TABLE_INGEST limit 10"
 
 
 
@@ -55,10 +60,9 @@ insert or ignore into points(geometry)
 select geometry from $TABLE_INGEST;
 EOF
 )
-sqlite-utils --load-extension=spatialite \
-  $FILE_DB "$q" \
+splite "$q" \
   | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
-#sqlite-utils $FILE_DB "select * from points limit 10"
+#splite "select * from points limit 10"
 
 
 echo "upsert to \`$TABLE_APPEND\`..."
@@ -72,15 +76,14 @@ where true
 ON CONFLICT(time_id, point_id) DO UPDATE SET $TABLE_APPEND=excluded.$TABLE_APPEND;
 EOF
 )
-sqlite-utils --load-extension=spatialite \
-  $FILE_DB "$q" -p base_time $BASETIME -p valid_time $VALIDTIME \
+splite "$q" -p base_time $BASETIME -p valid_time $VALIDTIME \
   | jq '.[0].rows_affected' | tee -a $ROWS_AFFECTED
-#sqlite-utils $FILE_DB "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
+#splite "select * from $TABLE_APPEND order by $TABLE_APPEND limit 1";
 
 
 echo "cleanup..."
 echo "drop table \`$TABLE_INGEST\`..."
-sqlite-utils --load-extension=spatialite $FILE_DB "select DropTable('main', '$TABLE_INGEST')"
+splite "select DropTable('main', '$TABLE_INGEST')"
 
 echo "remove $FILE_GEOJSON..."
 rm -f $FILE_GEOJSON
