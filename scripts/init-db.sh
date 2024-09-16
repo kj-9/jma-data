@@ -31,6 +31,8 @@ create table if not exists points (
 );'
 
 splite "select AddGeometryColumn('points', 'geometry', 4326, 'POINT', 2, 1);"
+splite 'CREATE UNIQUE INDEX point_geometry_uq_idx ON points(geometry)';
+
 
 echo "create if not exists \`temperature\` table..."
 splite '
