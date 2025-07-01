@@ -3,14 +3,16 @@ name: Scrape and commit
 on:
   workflow_dispatch:
   schedule:
-  # once a day at  5:15, 11:15, 17:15 on JST
-  - cron:  '15 20,2,8 * * *'
+    # once a day at  5:15, 11:15, 17:15 on JST
+    - cron: '15 20,2,8 * * *'
 
 jobs:
   scrape-and-commit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
     - name: setup
       run: |- 
         sudo apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
