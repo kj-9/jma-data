@@ -1,0 +1,12 @@
+[project]
+name = "jma-data"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.3.1",
+    "marimo>=0.14.6",
+    "polars[pyarrow]>=1.31.0",
+    "sqlglot>=26.30.0",
+]
